@@ -1,0 +1,224 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ldapmanager.fullname" . }}
+  labels:
+    {{- include "ldapmanager.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "ldapmanager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "ldapmanager.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "ldapmanager.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ default (default .Chart.AppVersion .Values.global.appVersion) .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.httpPort }}
+            - name: grpc
+              containerPort: {{ .Values.service.grpcPort }}
+
+          readinessProbe:
+            grpc:
+              port: {{ .Values.service.grpcPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+
+          livenessProbe:
+            grpc:
+              port: {{ .Values.service.grpcPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+
+          # TODO: Create secrets for all passwords
+          env:
+          # ports
+          - name: HTTP_PORT
+            value: {{ .Values.service.httpPort | quote }}
+          - name: GRPC_PORT
+            value: {{ .Values.service.grpcPort | quote }}
+          {{- if .Values.log }}
+          - name: LOG
+            value: {{ .Values.log | quote }}
+          {{- end }}
+          - name: NO_STATIC
+            value: {{ not (default true (.Values.static).enabled) | quote }}
+          {{- if (.Values.static).root }}
+          - name: STATIC_ROOT
+            value: {{ .Values.static.root | quote }}
+          {{- end }}
+          
+          # JWT auth
+          {{- if (.Values.auth).privateKey }}
+          - name: PRIVATE_KEY
+            value: {{ .Values.auth.privateKey | quote }}
+          {{- end }}
+          {{- if (.Values.auth).jwksJSON }}
+          - name: JWKS_JSON
+            value: {{ (.Values.auth).jwksJSON | quote }}
+          {{- end }}
+          {{- if (.Values.auth).privateKeyFile }}
+          - name: PRIVATE_KEY_FILE
+            value: {{ .Values.auth.privateKeyFile | quote }}
+          {{- end }}
+          {{- if (.Values.auth).jwksJSONFile }}
+          - name: JWKS_JSON_FILE
+            value: {{ .Values.auth.jwksJSONFile | quote }}
+          {{- end }}
+          {{- if (.Values.auth).generateKeys }}
+          - name: GENERATE
+            value: {{ .Values.auth.generateKeys | quote }}
+          {{- end }}
+          {{- if .Values.auth.expirationTime }}
+          - name: EXPIRATION_TIME
+            value: {{ .Values.auth.expirationTime | quote }}
+          {{- end }}
+          {{- if .Values.auth.issuer }}
+          - name: ISSUER
+            value: {{ .Values.auth.issuer | quote }}
+          {{- end }}
+          {{- if .Values.auth.audience }}
+          - name: AUDIENCE
+            value: {{ .Values.auth.audience | quote }}
+          {{- end }}
+
+          # LDAP server config
+          - name: LDAP_HOST
+            value: {{ default (include "ldapmanager.openldap" .) .Values.ldap.host | quote }}
+          - name: LDAP_PORT
+            value: {{ default 389 .Values.ldap.port | quote }}
+          - name: LDAP_PROTOCOL
+            value: {{ default "ldap" .Values.ldap.protocol | quote }}
+          {{- if .Values.ldap.adminPassword }}
+          - name: LDAP_ADMIN_PASSWORD
+            value: {{ .Values.ldap.adminPassword | quote }}
+          {{- end }}
+          {{- if .Values.ldap.configPassword }}
+          - name: LDAP_CONFIG_PASSWORD
+            value: {{ .Values.ldap.configPassword | quote }}
+          {{- end }}
+          {{- if .Values.ldap.readonly.username }}
+          - name: LDAP_READONLY_USERNAME
+            value: {{ .Values.ldap.readonly.username | quote }}
+          {{- end }}
+          {{- if .Values.ldap.readonly.password }}
+          - name: LDAP_READONLY_PASSWORD
+            value: {{ .Values.ldap.readonly.password | quote }}
+          {{- end }}
+          {{- if .Values.ldap.organization }}
+          - name: LDAP_ORGANIZATION
+            value: {{ .Values.ldap.organization | quote }}
+          {{- end }}
+          {{- if .Values.ldap.domain }}
+          - name: LDAP_DOMAIN
+            value: {{ .Values.ldap.domain | quote }}
+          {{- end }}
+          {{- if .Values.ldap.baseDN }}
+          - name: LDAP_BASE_DN
+            value: {{ .Values.ldap.baseDN | quote }}
+          {{- end }}
+          {{- if .Values.ldap.tls }}
+          - name: LDAP_TLS
+            value: {{ .Values.ldap.tls | quote }}
+          {{- end }}
+          {{- if .Values.ldap.useRFC2307BIS }}
+          - name: LDAP_USE_RFC2307BIS
+            value: {{ .Values.ldap.useRFC2307BIS | quote }}
+          {{- end }}
+
+          # LDAP manager flags
+          {{- if .Values.groupsOU }}
+          - name: GROUPS_OU
+            value: {{ .Values.groupsOU | quote }}
+          {{- end }}
+          {{- if .Values.usersOU }}
+          - name: USERS_OU
+            value: {{ .Values.usersOU | quote }}
+          {{- end }}
+          {{- if .Values.groupsDN }}
+          - name: GROUPS_DN
+            value: {{ .Values.groupsDN | quote }}
+          {{- end }}
+          {{- if .Values.usersDN }}
+          - name: USERS_DN
+            value: {{ .Values.usersDN | quote }}
+          {{- end }}
+          {{- if .Values.groupMembershipAttribute }}
+          - name: GROUP_MEMBERSHIP_ATTRIBUTE
+            value: {{ .Values.groupMembershipAttribute | quote }}
+          {{- end }}
+          - name: GROUP_MEMBERSHIP_USES_UID
+            value: {{ (default false .Values.groupMembershipUsesUID) | quote }}
+          {{- if .Values.accountAttribute }}
+          - name: ACCOUNT_ATTRIBUTE
+            value: {{ .Values.accountAttribute | quote }}
+          {{- end }}
+          {{- if .Values.groupAttribute }}
+          - name: GROUP_ATTRIBUTE
+            value: {{ .Values.groupAttribute | quote }}
+          {{- end }}
+          {{- if .Values.defaultUserGroup }}
+          - name: DEFAULT_USER_GROUP
+            value: {{ .Values.defaultUserGroup | quote }}
+          {{- end }}
+          {{- if .Values.defaultAdminGroup }}
+          - name: DEFAULT_ADMIN_GROUP
+            value: {{ .Values.defaultAdminGroup | quote }}
+          {{- end }}
+          {{- if .Values.defaultLoginShell }}
+          - name: DEFAULT_LOGIN_SHELL
+            value: {{ .Values.defaultLoginShell | quote }}
+          {{- end }}
+          {{- if .Values.defaultAdminUsername }}
+          - name: DEFAULT_ADMIN_USERNAME
+            value: {{ .Values.defaultAdminUsername | quote }}
+          {{- end }}
+          {{- if .Values.defaultAdminPassword }}
+          - name: DEFAULT_ADMIN_PASSWORD
+            value: {{ .Values.defaultAdminPassword | quote }}
+          {{- end }}
+          - name: FORCE_CREATE_ADMIN
+            value: {{ (default false .Values.forceCreateAdmin) | quote }}
+
+          # Any additional environment variables
+          {{- range .Values.additionalEnv }}
+          - name: {{ .name }}
+            value: {{ .value | quote }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,177 @@
+global: {}
+  # default to the appVersion of the chart instead
+  #   appVersion: ""
+
+openldap:
+  enabled: true
+
+  env:
+    LDAP_ORGANISATION: "Example Inc."
+    LDAP_DOMAIN: "example.org"
+    LDAP_BASE_DN: "dc=example,dc=org"
+
+    LDAP_READONLY_USER: "true"
+    LDAP_READONLY_USER_USERNAME: readonly
+    LDAP_READONLY_USER_PASSWORD: readonly
+    # LDAP_REMOVE_CONFIG_AFTER_SETUP: "false"
+
+    LDAP_TLS: "false"
+    # LDAP_TLS_ENFORCE: "false"
+    LDAP_RFC2307BIS_SCHEMA: "true"
+
+  auth:
+    adminPassword: "admin"
+    configPassword: "config"
+    # existingSecret: ""
+
+  tls:
+    enabled: false
+
+  persistence:
+    enabled: false
+    # existingClaim: ""
+
+  logLevel: info
+
+ldap:
+  adminPassword: admin
+  configPassword: config
+  readonly:
+    username: readonly
+    password: readonly
+  organization: Example Inc.
+  domain: example.org
+  baseDN: dc=example,dc=org
+  tls: "false"
+  useRFC2307BIS: "true"
+
+  # host: ldapmanager-openldap
+  # port: 389
+  # protocol: "ldap"
+
+
+log: "info"
+
+# static is enabled by default
+static: {}
+  # enabled: "true"
+  # root: "./frontend/dist"
+
+auth:
+  generateKeys: true
+  expirationTime: "24h"
+  issuer: "issuer@example.org"
+  audience: "example.org"
+  # privateKey: ""
+  # jwksJSON: ""
+  # privateKeyFile: ""
+  # jwksJSONFile: ""
+
+groupsOU: "groups"
+usersOU: "users"
+# if groupsDN left empty, it will be generated
+# from groupsOU and baseDN (e.g.ou=groups,dc=example,dc=org)
+groupsDN: "" 
+# if usersDN left empty, it will be generated
+# from usersOU and baseDN (e.g.ou=users,dc=example,dc=org)
+usersDN: "" 
+groupMembershipAttribute: "uniqueMember"
+groupMembershipUsesUID: false
+accountAttribute: "uid"
+groupAttribute: "gid"
+defaultUserGroup: "users"
+defaultAdminGroup: "admins"
+defaultLoginShell: "/bin/bash"
+
+defaultAdminUsername: "admin"
+defaultAdminPassword: "admin"
+forceCreateAdmin: false
+
+# additionalEnv:
+#  - name: "KEY"
+#   value: "VALUE"
+
+replicaCount: 1
+
+image:
+  repository: romnn/ldap-manager
+  pullPolicy: IfNotPresent
+  # Overrides the image tag
+  # Default: the chart `appVersion` or `global.appVersion`
+  # tag: "v0.0.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  httpPort: 8080
+  grpcPort: 9090
+
+ingress:
+  enabled: true
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    # cert-manager.io/cluster-issuer: letsencrypt-staging
+  hosts:
+    - host: ldapmanager.example.org
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+          # expose HTTP REST API
+          servicePort: 8080
+          # or: expose GRPC API
+          # servicePort: 9090
+  # tls:
+  #   - secretName: ldapmanager.example.org
+  #     hosts:
+  #       - ldapmanager.example.org
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

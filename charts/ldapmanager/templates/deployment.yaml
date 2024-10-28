@@ -107,7 +107,7 @@ spec:
 
           # LDAP server config
           - name: LDAP_HOST
-            value: {{ default (include "ldapmanager.openldap" .) .Values.ldap.host | quote }}
+            value: {{ default "ldap" .Values.ldap.host | quote }}
           - name: LDAP_PORT
             value: {{ default 389 .Values.ldap.port | quote }}
           - name: LDAP_PROTOCOL

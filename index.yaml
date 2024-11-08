@@ -89,4 +89,24 @@ entries:
     urls:
     - ldapmanager-0.0.0.tgz
     version: 0.0.0
-generated: "2024-10-29T03:06:46.283293673Z"
+  polaris:
+  - apiVersion: v2
+    created: "2024-11-08T06:54:04.770775639Z"
+    description: A Helm chart for Polaris
+    digest: 18e5c38eb7f837f997bd7447bebe4b34c7c31a67256d79065d329f3267e65790
+    home: https://polaris.apache.org/
+    icon: https://raw.githubusercontent.com/apache/polaris/main/docs/img/logos/polaris-brandmark.png
+    keywords:
+    - polaris
+    - iceberg
+    maintainers:
+    - name: MonkeyCanCode
+    - name: adutra
+    name: polaris
+    sources:
+    - https://github.com/apache/polaris
+    type: application
+    urls:
+    - polaris-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-11-08T06:54:04.770788323Z"
